@@ -23,14 +23,11 @@ import org.libresonic.player.Logger;
 import org.libresonic.player.domain.MediaFile;
 import org.libresonic.player.domain.Playlist;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Provides database services for playlists.
@@ -80,7 +77,8 @@ public class PlaylistDao extends AbstractDao {
         return query("select " + QUERY_COLUMNS + " from playlist", rowMapper);
     }
 
-    public synchronized void createPlaylist(Playlist playlist) {
+    @Transactional
+    public void createPlaylist(Playlist playlist) {
         update("insert into playlist(" + INSERT_COLUMNS + ") values(" + questionMarks(INSERT_COLUMNS) + ")",
                 playlist.getUsername(), playlist.isShared(), playlist.getName(), playlist.getComment(),
                 0, 0, playlist.getCreated(), playlist.getChanged(), playlist.getImportedFrom());
@@ -115,7 +113,8 @@ public class PlaylistDao extends AbstractDao {
         update("delete from playlist_user where playlist_id=? and username=?", playlistId, username);
     }
 
-    public synchronized void deletePlaylist(int id) {
+    @Transactional
+    public void deletePlaylist(int id) {
         update("delete from playlist where id=?", id);
     }
 

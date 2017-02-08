@@ -22,16 +22,12 @@ package org.libresonic.player.dao;
 import org.libresonic.player.Logger;
 import org.libresonic.player.domain.Artist;
 import org.libresonic.player.domain.MusicFolder;
-
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Provides database services for artists.
@@ -91,7 +87,8 @@ public class ArtistDao extends AbstractDao {
      *
      * @param artist The artist to create/update.
      */
-    public synchronized void createOrUpdateArtist(Artist artist) {
+    @Transactional
+    public void createOrUpdateArtist(Artist artist) {
         String sql = "update artist set " +
                      "cover_art_path=?," +
                      "album_count=?," +
