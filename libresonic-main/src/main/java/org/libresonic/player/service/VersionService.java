@@ -26,8 +26,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.libresonic.player.Logger;
 import org.libresonic.player.domain.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.DateFormat;
@@ -45,7 +46,7 @@ import java.util.regex.Pattern;
 public class VersionService {
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-    private static final Logger LOG = Logger.getLogger(VersionService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VersionService.class);
 
     private Version localVersion;
     private Version latestFinalVersion;
@@ -67,10 +68,6 @@ public class VersionService {
      * URL from which to fetch latest versions.
      */
     private static final String VERSION_URL = "http://libresonic.org/release/version.txt";
-
-    public void init() {
-        ServiceLocator.setVersionService(this);
-    }
 
     /**
      * Returns the version number for the locally installed Libresonic version.

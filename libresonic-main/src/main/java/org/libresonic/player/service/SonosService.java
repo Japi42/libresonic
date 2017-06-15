@@ -28,7 +28,6 @@ import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.jaxb.JAXBDataBinding;
 import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.message.Message;
-import org.libresonic.player.Logger;
 import org.libresonic.player.domain.AlbumListType;
 import org.libresonic.player.domain.MediaFile;
 import org.libresonic.player.domain.Playlist;
@@ -36,6 +35,8 @@ import org.libresonic.player.domain.User;
 import org.libresonic.player.service.sonos.SonosHelper;
 import org.libresonic.player.service.sonos.SonosServiceRegistration;
 import org.libresonic.player.service.sonos.SonosSoapFault;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 
 import javax.annotation.Resource;
@@ -51,9 +52,6 @@ import javax.xml.ws.handler.MessageContext;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * For manual testing of this service:
@@ -64,7 +62,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class SonosService implements SonosSoap {
 
-    private static final Logger LOG = Logger.getLogger(SonosService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SonosService.class);
 
     public static final String ID_ROOT = "root";
     public static final String ID_SHUFFLE = "shuffle";
@@ -101,8 +99,6 @@ public class SonosService implements SonosSoap {
     private PlaylistService playlistService;
     private UPnPService upnpService;
 
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
     /**
      * The context for the request. This is used to get the Auth information
      * form the headers as well as using the request url to build the correct
@@ -111,27 +107,7 @@ public class SonosService implements SonosSoap {
     @Resource
     private WebServiceContext context;
 
-    private String localIp;
-
-    public void init() {
-        executor.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                registerIfLocalIpChanged();
-            }
-        }, 8, 60, TimeUnit.SECONDS);
-    }
-
-    private void registerIfLocalIpChanged() {
-        if (settingsService.isSonosEnabled()) {
-            if (localIp == null || !localIp.equals(settingsService.getLocalIpAddress())) {
-                localIp = settingsService.getLocalIpAddress();
-                setMusicServiceEnabled(true);
-            }
-        }
-    }
-
-    public void setMusicServiceEnabled(boolean enabled) {
+    public void setMusicServiceEnabled(boolean enabled, String baseUrl) {
         List<String> sonosControllers = upnpService.getSonosControllerHosts();
         if (sonosControllers.isEmpty()) {
             LOG.info("No Sonos controller found");
@@ -141,11 +117,10 @@ public class SonosService implements SonosSoap {
 
         String sonosServiceName = settingsService.getSonosServiceName();
         int sonosServiceId = settingsService.getSonosServiceId();
-        String libresonicBaseUrl = sonosHelper.getBaseUrl(getRequest());
 
         for (String sonosController : sonosControllers) {
             try {
-                new SonosServiceRegistration().setEnabled(libresonicBaseUrl, sonosController, enabled,
+                new SonosServiceRegistration().setEnabled(baseUrl, sonosController, enabled,
                                                           sonosServiceName, sonosServiceId);
                 break;
             } catch (IOException x) {

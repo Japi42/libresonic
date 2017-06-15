@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.libresonic.player</groupId>
     <artifactId>libresonic</artifactId>
-    <version>6.2.beta1.springboot</version>
+    <version>6.3-SNAPSHOT</version>
     <name>Libresonic</name>
     <packaging>pom</packaging>
     <organization>
@@ -34,6 +34,10 @@
             <id>teleal</id>
             <name>teleal</name>
             <url>http://teleal.org/m2</url>
+        </repository>
+        <repository>
+            <id>jaudiotagger-repository</id>
+            <url>https://dl.bintray.com/ijabz/maven</url>
         </repository>
     </repositories>
 
@@ -82,7 +86,7 @@
                 <!-- Import dependency management from Spring Boot -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>1.4.2.RELEASE</version>
+                <version>1.4.5.RELEASE</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -131,6 +135,11 @@
                     <artifactId>maven-war-plugin</artifactId>
                     <configuration>
                         <failOnMissingWebXml>false</failOnMissingWebXml>
+                        <archive>
+                            <manifest>
+                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            </manifest>
+                        </archive>
                     </configuration>
                 </plugin>
                 <plugin>

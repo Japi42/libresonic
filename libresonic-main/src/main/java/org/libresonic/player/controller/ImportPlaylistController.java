@@ -32,10 +32,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -55,8 +54,10 @@ public class ImportPlaylistController {
     @Autowired
     private PlaylistService playlistService;
 
-    @RequestMapping(method = RequestMethod.GET)
-    protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    @RequestMapping(method = RequestMethod.POST)
+    protected String handlePost(RedirectAttributes redirectAttributes,
+                                           HttpServletRequest request
+                                           ) throws Exception {
         Map<String, Object> map = new HashMap<String, Object>();
 
         try {
@@ -76,7 +77,8 @@ public class ImportPlaylistController {
                         String fileName = FilenameUtils.getName(item.getName());
                         String format = StringUtils.lowerCase(FilenameUtils.getExtension(item.getName()));
                         String username = securityService.getCurrentUsername(request);
-                        Playlist playlist = playlistService.importPlaylist(username, playlistName, fileName, format, item.getInputStream(), null);
+                        Playlist playlist = playlistService.importPlaylist(username, playlistName, fileName,
+                                                                           item.getInputStream(), null);
                         map.put("playlist", playlist);
                     }
                 }
@@ -85,8 +87,13 @@ public class ImportPlaylistController {
             map.put("error", e.getMessage());
         }
 
-        return new ModelAndView("importPlaylist","model",map);
+        redirectAttributes.addFlashAttribute("model", map);
+        return "redirect:importPlaylist";
     }
 
+    @RequestMapping(method = RequestMethod.GET)
+    public String handleGet() {
+        return "importPlaylist";
+    }
 
 }

@@ -24,6 +24,9 @@ import org.libresonic.player.domain.Genre;
 import org.libresonic.player.domain.MediaFile;
 import org.libresonic.player.domain.MusicFolder;
 import org.libresonic.player.domain.RandomSearchCriteria;
+import org.libresonic.player.util.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +43,7 @@ import static org.libresonic.player.domain.MediaFile.MediaType.*;
  * @author Sindre Mehus
  */
 public class MediaFileDao extends AbstractDao {
+    private static final Logger logger = LoggerFactory.getLogger(MediaFileDao.class);
     private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
                                                 "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, version";
@@ -131,6 +135,7 @@ public class MediaFileDao extends AbstractDao {
      */
     @Transactional
     public void createOrUpdateMediaFile(MediaFile file) {
+        logger.trace("Creating/Updating new media file at {}", file.getPath());
         String sql = "update media_file set " +
                      "folder=?," +
                      "type=?," +
@@ -160,6 +165,8 @@ public class MediaFileDao extends AbstractDao {
                      "present=?, " +
                      "version=? " +
                      "where path=?";
+
+        logger.trace("Updating media file {}", Util.debugObject(file));
 
         int n = update(sql,
                        file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),

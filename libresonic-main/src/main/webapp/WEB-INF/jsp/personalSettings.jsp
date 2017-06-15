@@ -132,8 +132,6 @@
         <tr>
             <td><form:checkbox path="showNowPlayingEnabled" id="nowPlaying" cssClass="checkbox"/></td>
             <td><label for="nowPlaying"><fmt:message key="personalsettings.shownowplaying"/></label></td>
-            <td style="padding-left:2em"><form:checkbox path="showChatEnabled" id="chat" cssClass="checkbox"/></td>
-            <td><label for="chat"><fmt:message key="personalsettings.showchat"/></label></td>
             <td style="padding-left:2em"><form:checkbox path="showArtistInfoEnabled" id="artistInfo" cssClass="checkbox"/></td>
             <td><label for="artistInfo"><fmt:message key="personalsettings.showartistinfo"/></label></td>
         </tr>
@@ -191,6 +189,10 @@
             <td><fmt:message key="personalsettings.listreloaddelay"/></td>
             <td><form:input path="listReloadDelay" size="24"/></td>
         </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.paginationsize"/></td>
+            <td><form:input path="paginationSize" size="24"/></td>
+        </tr>
     </table>
 
     <table id="lastFmTable" style="padding-left:2em">
@@ -240,8 +242,7 @@
     </p>
 </form:form>
 
-<form method="post" enctype="multipart/form-data" action="avatarUpload.view">
-    <sec:csrfInput />
+<form method="post" enctype="multipart/form-data" action="avatarUpload.view?${_csrf.parameterName}=${_csrf.token}">
     <table>
         <tr>
             <td style="padding-right:1em"><fmt:message key="personalsettings.avatar.changecustom"/></td>

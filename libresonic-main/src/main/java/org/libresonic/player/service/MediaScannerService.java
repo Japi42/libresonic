@@ -20,12 +20,14 @@
 package org.libresonic.player.service;
 
 import org.apache.commons.lang.ObjectUtils;
-import org.libresonic.player.Logger;
+import org.apache.commons.lang3.time.DateUtils;
 import org.libresonic.player.dao.AlbumDao;
 import org.libresonic.player.dao.ArtistDao;
 import org.libresonic.player.dao.MediaFileDao;
 import org.libresonic.player.domain.*;
 import org.libresonic.player.util.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
@@ -38,7 +40,7 @@ import java.util.*;
 public class MediaScannerService {
 
     private static final int INDEX_VERSION = 15;
-    private static final Logger LOG = Logger.getLogger(MediaScannerService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MediaScannerService.class);
 
     private MediaLibraryStatistics statistics;
 
@@ -150,9 +152,10 @@ public class MediaScannerService {
 
     private void doScanLibrary() {
         LOG.info("Starting to scan media library.");
+        Date lastScanned = DateUtils.truncate(new Date(), Calendar.SECOND);
+        LOG.debug("New last scan date is " + lastScanned);
 
         try {
-            Date lastScanned = new Date();
 
             // Maps from artist name to album count.
             Map<String, Integer> albumCount = new HashMap<String, Integer>();
@@ -217,6 +220,8 @@ public class MediaScannerService {
         if (scanCount % 250 == 0) {
             LOG.info("Scanned media library with " + scanCount + " entries.");
         }
+
+        LOG.trace("Scanning file {}", file.getPath());
 
         searchService.index(file);
 

@@ -20,17 +20,21 @@
 package org.libresonic.player.controller;
 
 import org.apache.commons.io.IOUtils;
-import org.libresonic.player.Logger;
 import org.libresonic.player.domain.*;
 import org.libresonic.player.io.PlayQueueInputStream;
 import org.libresonic.player.io.RangeOutputStream;
 import org.libresonic.player.io.ShoutCastOutputStream;
+import org.libresonic.player.security.JWTAuthenticationToken;
 import org.libresonic.player.service.*;
 import org.libresonic.player.service.sonos.SonosHelper;
 import org.libresonic.player.util.HttpRange;
 import org.libresonic.player.util.StringUtil;
 import org.libresonic.player.util.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.ServletRequestUtils;
@@ -55,10 +59,10 @@ import java.util.regex.Pattern;
  * @author Sindre Mehus
  */
 @Controller
-@RequestMapping("/stream/**")
+@RequestMapping(value = {"/stream/**", "/ext/stream/**"})
 public class StreamController  {
 
-    private static final Logger LOG = Logger.getLogger(StreamController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StreamController.class);
 
     @Autowired
     private StatusService statusService;
@@ -86,10 +90,11 @@ public class StreamController  {
         PlayQueueInputStream in = null;
         Player player = playerService.getPlayer(request, response, false, true);
         User user = securityService.getUserByName(player.getUsername());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         try {
 
-            if (!user.isStreamRole()) {
+            if (!(authentication instanceof JWTAuthenticationToken) && !user.isStreamRole()) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Streaming is forbidden for user " + user.getUsername());
                 return null;
             }
@@ -128,12 +133,21 @@ public class StreamController  {
 
             if (isSingleFile) {
 
-                if (!securityService.isFolderAccessAllowed(file, user.getUsername())) {
+                if (!(authentication instanceof JWTAuthenticationToken) && !securityService.isFolderAccessAllowed(file, user.getUsername())) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN,
                                        "Access to file " + file.getId() + " is forbidden for user " + user.getUsername());
                     return null;
                 }
 
+                // Update the index of the currently playing media file. At
+                // this point we haven't yet modified the play queue to support
+                // multiple streams, so the current play queue is the real one.
+                int currentIndex = player.getPlayQueue().getFiles().indexOf(file);
+                player.getPlayQueue().setIndex(currentIndex);
+
+                // Create a new, fake play queue that only contains the
+                // currently playing media file, in case multiple streams want
+                // to use the same player.
                 PlayQueue playQueue = new PlayQueue();
                 playQueue.addFiles(true, file);
                 player.setPlayQueue(playQueue);

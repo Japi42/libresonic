@@ -33,7 +33,6 @@ public class UserSettings {
     private Locale locale;
     private String themeId;
     private boolean showNowPlayingEnabled;
-    private boolean showChatEnabled;
     private boolean showArtistInfoEnabled;
     private boolean finalVersionNotificationEnabled;
     private boolean betaVersionNotificationEnabled;
@@ -57,6 +56,7 @@ public class UserSettings {
     private AvatarScheme avatarScheme = AvatarScheme.NONE;
     private Integer systemAvatarId;
     private Date changed = new Date();
+    private int paginationSize;
 
     public UserSettings(String username) {
         this.username = username;
@@ -92,14 +92,6 @@ public class UserSettings {
 
     public void setShowNowPlayingEnabled(boolean showNowPlayingEnabled) {
         this.showNowPlayingEnabled = showNowPlayingEnabled;
-    }
-
-    public boolean isShowChatEnabled() {
-        return showChatEnabled;
-    }
-
-    public void setShowChatEnabled(boolean showChatEnabled) {
-        this.showChatEnabled = showChatEnabled;
     }
 
     public boolean isShowArtistInfoEnabled() {
@@ -294,6 +286,14 @@ public class UserSettings {
 
     public void setQueueFollowingSongs(boolean queueFollowingSongs) {
         this.queueFollowingSongs = queueFollowingSongs;
+    }
+
+    public int getPaginationSize() {
+        return paginationSize;
+    }
+
+    public void setPaginationSize(int paginationSize) {
+        this.paginationSize = paginationSize;
     }
 
     /**

@@ -22,11 +22,7 @@ package org.libresonic.player.controller;
 import org.libresonic.player.domain.MusicFolder;
 import org.libresonic.player.domain.Player;
 import org.libresonic.player.domain.User;
-import org.libresonic.player.service.MediaFileService;
-import org.libresonic.player.service.PlayerService;
-import org.libresonic.player.service.SecurityService;
-import org.libresonic.player.service.SettingsService;
-import org.libresonic.player.util.StringUtil;
+import org.libresonic.player.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -73,12 +69,6 @@ public class MoreController  {
         }
 
 
-        StringBuilder jamstashUrl = new StringBuilder("http://jamstash.com/#/settings?u=" + StringUtil.urlEncode(user.getUsername()) + "&url=");
-        if (settingsService.isUrlRedirectionEnabled()) {
-            jamstashUrl.append(StringUtil.urlEncode(settingsService.getUrlRedirectUrl()));
-        } else {
-            jamstashUrl.append(StringUtil.urlEncode(request.getRequestURL().toString().replaceAll("/more.view.*", "")));
-        }
 
         Player player = playerService.getPlayer(request, response);
         ModelAndView result = new ModelAndView();
@@ -90,7 +80,6 @@ public class MoreController  {
         map.put("musicFolders", musicFolders);
         map.put("clientSidePlaylist", player.isExternalWithPlaylist() || player.isWeb());
         map.put("brand", settingsService.getBrand());
-        map.put("jamstashUrl", jamstashUrl);
         return result;
     }
 }

@@ -19,9 +19,10 @@
  */
 package org.libresonic.player.dao;
 
-import org.libresonic.player.Logger;
 import org.libresonic.player.domain.*;
 import org.libresonic.player.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +38,7 @@ import java.util.List;
 @Transactional
 public class UserDao extends AbstractDao {
 
-    private static final Logger LOG = Logger.getLogger(UserDao.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
     private static final String USER_COLUMNS = "username, password, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
     private static final String USER_SETTINGS_COLUMNS = "username, locale, theme_id, final_version_notification, beta_version_notification, " +
             "song_notification, main_track_number, main_artist, main_album, main_genre, " +
@@ -45,8 +46,9 @@ public class UserDao extends AbstractDao {
             "playlist_track_number, playlist_artist, playlist_album, playlist_genre, " +
             "playlist_year, playlist_bit_rate, playlist_duration, playlist_format, playlist_file_size, " +
             "last_fm_enabled, last_fm_username, last_fm_password, transcode_scheme, show_now_playing, selected_music_folder_id, " +
-            "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_chat, show_artist_info, auto_hide_play_queue, " +
-            "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, keyboard_shortcuts_enabled";
+            "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
+            "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
+            "keyboard_shortcuts_enabled, pagination_size";
 
     private static final Integer ROLE_ID_ADMIN = 1;
     private static final Integer ROLE_ID_DOWNLOAD = 2;
@@ -212,9 +214,11 @@ public class UserDao extends AbstractDao {
                                                    settings.getTranscodeScheme().name(), settings.isShowNowPlayingEnabled(),
                                                    settings.getSelectedMusicFolderId(), settings.isPartyModeEnabled(), settings.isNowPlayingAllowed(),
                                                    settings.getAvatarScheme().name(), settings.getSystemAvatarId(), settings.getChanged(),
-                                                   settings.isShowChatEnabled(), settings.isShowArtistInfoEnabled(), settings.isAutoHidePlayQueue(),
+                                                   settings.isShowArtistInfoEnabled(), settings.isAutoHidePlayQueue(),
                                                    settings.isViewAsList(), settings.getDefaultAlbumList().getId(), settings.isQueueFollowingSongs(),
-                                                   settings.isShowSideBar(), settings.getListReloadDelay(), settings.isKeyboardShortcutsEnabled()});
+                                                   settings.isShowSideBar(), settings.getListReloadDelay(), settings.isKeyboardShortcutsEnabled(),
+                                                   settings.getPaginationSize()
+        });
     }
 
     private static String encrypt(String s) {
@@ -367,7 +371,6 @@ public class UserDao extends AbstractDao {
             settings.setAvatarScheme(AvatarScheme.valueOf(rs.getString(col++)));
             settings.setSystemAvatarId((Integer) rs.getObject(col++));
             settings.setChanged(rs.getTimestamp(col++));
-            settings.setShowChatEnabled(rs.getBoolean(col++));
             settings.setShowArtistInfoEnabled(rs.getBoolean(col++));
             settings.setAutoHidePlayQueue(rs.getBoolean(col++));
             settings.setViewAsList(rs.getBoolean(col++));
@@ -376,6 +379,7 @@ public class UserDao extends AbstractDao {
             settings.setShowSideBar(rs.getBoolean(col++));
             settings.setListReloadDelay((Integer) rs.getObject(col++));
             settings.setKeyboardShortcutsEnabled(rs.getBoolean(col++));
+            settings.setPaginationSize(rs.getInt(col++));
 
             return settings;
         }

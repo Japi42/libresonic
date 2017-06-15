@@ -19,25 +19,28 @@
  */
 package org.libresonic.player.controller;
 
-import org.libresonic.player.domain.MediaFile;
-import org.libresonic.player.domain.MusicFolder;
-import org.libresonic.player.domain.Player;
-import org.libresonic.player.domain.Share;
-import org.libresonic.player.service.MediaFileService;
-import org.libresonic.player.service.PlayerService;
-import org.libresonic.player.service.SettingsService;
-import org.libresonic.player.service.ShareService;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import org.apache.commons.lang3.StringUtils;
+import org.libresonic.player.domain.*;
+import org.libresonic.player.security.JWTAuthenticationToken;
+import org.libresonic.player.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the page used to play shared music (Twitter, Facebook etc).
@@ -45,8 +48,10 @@ import java.util.*;
  * @author Sindre Mehus
  */
 @Controller
-@RequestMapping("/share/**")
+@RequestMapping(value = {"/ext/share/**"})
 public class ExternalPlayerController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ExternalPlayerController.class);
 
     @Autowired
     private SettingsService settingsService;
@@ -56,22 +61,27 @@ public class ExternalPlayerController {
     private ShareService shareService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
 
     @RequestMapping(method = RequestMethod.GET)
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
 
-        String pathInfo = request.getPathInfo();
+        String shareName = ControllerUtils.extractMatched(request);
+        LOG.debug("Share name is {}", shareName);
 
-        if (pathInfo == null || !pathInfo.startsWith("/")) {
+        if(StringUtils.isBlank(shareName)) {
+            LOG.warn("Could not find share with shareName " + shareName);
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return null;
         }
 
-        Share share = shareService.getShareByName(pathInfo.substring(1));
+        Share share = shareService.getShareByName(shareName);
 
         if (share != null && share.getExpires() != null && share.getExpires().before(new Date())) {
+            LOG.warn("Share " + shareName + " is expired");
             share = null;
         }
 
@@ -84,25 +94,32 @@ public class ExternalPlayerController {
         Player player = playerService.getGuestPlayer(request);
 
         map.put("share", share);
-        map.put("songs", getSongs(share, player.getUsername()));
-        map.put("redirectUrl", settingsService.getUrlRedirectUrl());
-        map.put("player", player.getId());
+        map.put("songs", getSongs(request, share, player));
 
         return new ModelAndView("externalPlayer", "model", map);
     }
 
-    private List<MediaFile> getSongs(Share share, String username) throws IOException {
-        List<MediaFile> result = new ArrayList<MediaFile>();
+    private List<MediaFileWithUrlInfo> getSongs(HttpServletRequest request, Share share, Player player) throws IOException {
+        Date expires = null;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication instanceof JWTAuthenticationToken) {
+            DecodedJWT token = jwtSecurityService.verify((String) authentication.getCredentials());
+            expires = token.getExpiresAt();
+        }
+        Date finalExpires = expires;
 
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);
+        List<MediaFileWithUrlInfo> result = new ArrayList<>();
+
+        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
 
         if (share != null) {
             for (MediaFile file : shareService.getSharedFiles(share.getId(), musicFolders)) {
                 if (file.getFile().exists()) {
                     if (file.isDirectory()) {
-                        result.addAll(mediaFileService.getChildrenOf(file, true, false, true));
+                        List<MediaFile> childrenOf = mediaFileService.getChildrenOf(file, true, false, true);
+                        result.addAll(childrenOf.stream().map(mf -> addUrlInfo(request, player, mf, finalExpires)).collect(Collectors.toList()));
                     } else {
-                        result.add(file);
+                        result.add(addUrlInfo(request, player, file, finalExpires));
                     }
                 }
             }
@@ -110,4 +127,26 @@ public class ExternalPlayerController {
         return result;
     }
 
+    public MediaFileWithUrlInfo addUrlInfo(HttpServletRequest request, Player player, MediaFile mediaFile, Date expires) {
+        String prefix = "/ext";
+        String streamUrl = jwtSecurityService.addJWTToken(
+                UriComponentsBuilder
+                        .fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/stream")
+                        .queryParam("id", mediaFile.getId())
+                        .queryParam("player", player.getId())
+                        .queryParam("maxBitRate", "1200"),
+                expires)
+                .build()
+                .toUriString();
+
+        String coverArtUrl = jwtSecurityService.addJWTToken(
+                UriComponentsBuilder
+                        .fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/coverArt.view")
+                        .queryParam("id", mediaFile.getId())
+                        .queryParam("size", "500"),
+                expires)
+                .build()
+                .toUriString();
+        return new MediaFileWithUrlInfo(mediaFile, coverArtUrl, streamUrl);
+    }
 }

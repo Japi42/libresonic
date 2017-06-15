@@ -3,6 +3,48 @@
 # Libresonic/libresonic
 # -->
 
+v6.2
+----
+
+  * Small fixes
+  * Release only a month behind schedule! We're improving!
+
+v6.2.beta4
+---------
+
+  * Final fixes in Beta! Release soon
+
+v6.2.beta3
+----------
+
+  * API endpoint security tightening
+  * More documentation
+  * Less licensing code
+  * More cowbell
+
+v6.2.beta2
+----------
+
+  * Add database settings UI
+  * Documentation improvements
+  * Lots of spit and polish
+
+v6.2.beta1
+----------
+
+  * Add external database support
+  * Upgrade to new version of Spring
+  * Replace subsonic-booter with Spring Boot
+  * Remove remote-access service and port-forwarding
+  * Remove vestigial Subsonic licensing calls
+  * Add a demo site
+  * Tests and bugfixes and documentation, oh my!
+
+v6.1
+----
+
+  * First real stable release!
+
 v6.1.beta2
 --------
 

@@ -22,13 +22,11 @@ package org.libresonic.player.ajax;
 import org.apache.commons.lang.StringUtils;
 import org.directwebremoting.WebContext;
 import org.directwebremoting.WebContextFactory;
-import org.libresonic.player.Logger;
 import org.libresonic.player.domain.*;
-import org.libresonic.player.service.MediaScannerService;
-import org.libresonic.player.service.PlayerService;
-import org.libresonic.player.service.SettingsService;
-import org.libresonic.player.service.StatusService;
+import org.libresonic.player.service.*;
 import org.libresonic.player.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -44,7 +42,7 @@ import java.util.List;
  */
 public class NowPlayingService {
 
-    private static final Logger LOG = Logger.getLogger(NowPlayingService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NowPlayingService.class);
 
     private PlayerService playerService;
     private StatusService statusService;
@@ -91,7 +89,7 @@ public class NowPlayingService {
 
     private List<NowPlayingInfo> convert(List<PlayStatus> playStatuses) {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
-        String url = request.getRequestURL().toString();
+        String url = NetworkService.getBaseUrl(request);
         List<NowPlayingInfo> result = new ArrayList<NowPlayingInfo>();
         for (PlayStatus status : playStatuses) {
 
@@ -108,30 +106,20 @@ public class NowPlayingService {
 
             String artist = mediaFile.getArtist();
             String title = mediaFile.getTitle();
-            String streamUrl = url.replaceFirst("/dwr/.*", "/stream?player=" + player.getId() + "&id=" + mediaFile.getId());
-            String albumUrl = url.replaceFirst("/dwr/.*", "/main.view?id=" + mediaFile.getId());
+            String streamUrl = url + "/stream?player=" + player.getId() + "&id=" + mediaFile.getId();
+            String albumUrl = url + "/main.view?id=" + mediaFile.getId();
             String lyricsUrl = null;
             if (!mediaFile.isVideo()) {
-                lyricsUrl = url.replaceFirst("/dwr/.*", "/lyrics.view?artistUtf8Hex=" + StringUtil.utf8HexEncode(artist) +
-                                                        "&songUtf8Hex=" + StringUtil.utf8HexEncode(title));
+                lyricsUrl = url + "/lyrics.view?artistUtf8Hex=" + StringUtil.utf8HexEncode(artist) +
+                                                        "&songUtf8Hex=" + StringUtil.utf8HexEncode(title);
             }
-            String coverArtUrl = url.replaceFirst("/dwr/.*", "/coverArt.view?size=60&id=" + mediaFile.getId());
+            String coverArtUrl = url + "/coverArt.view?size=60&id=" + mediaFile.getId();
 
             String avatarUrl = null;
             if (userSettings.getAvatarScheme() == AvatarScheme.SYSTEM) {
-                avatarUrl = url.replaceFirst("/dwr/.*", "/avatar.view?id=" + userSettings.getSystemAvatarId());
+                avatarUrl = url + "/avatar.view?id=" + userSettings.getSystemAvatarId();
             } else if (userSettings.getAvatarScheme() == AvatarScheme.CUSTOM && settingsService.getCustomAvatar(username) != null) {
-                avatarUrl = url.replaceFirst("/dwr/.*", "/avatar.view?usernameUtf8Hex=" + StringUtil.utf8HexEncode(username));
-            }
-
-            // Rewrite URLs in case we're behind a proxy.
-            if (settingsService.isRewriteUrlEnabled()) {
-                String referer = request.getHeader("referer");
-                streamUrl = StringUtil.rewriteUrl(streamUrl, referer);
-                albumUrl = StringUtil.rewriteUrl(albumUrl, referer);
-                lyricsUrl = StringUtil.rewriteUrl(lyricsUrl, referer);
-                coverArtUrl = StringUtil.rewriteUrl(coverArtUrl, referer);
-                avatarUrl = StringUtil.rewriteUrl(avatarUrl, referer);
+                avatarUrl = url + "/avatar.view?usernameUtf8Hex=" + StringUtil.utf8HexEncode(username);
             }
 
             String tooltip = StringUtil.toHtml(artist) + " &ndash; " + StringUtil.toHtml(title);

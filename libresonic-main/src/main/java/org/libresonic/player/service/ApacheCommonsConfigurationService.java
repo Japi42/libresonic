@@ -6,7 +6,8 @@ import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.sync.ReadWriteSynchronizer;
 import org.apache.commons.io.FileUtils;
-import org.libresonic.player.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.HashMap;
 
 public class ApacheCommonsConfigurationService {
 
-    private static final Logger LOG = Logger.getLogger(ApacheCommonsConfigurationService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ApacheCommonsConfigurationService.class);
 
     private final FileBasedConfigurationBuilder<FileBasedConfiguration> builder;
 
@@ -34,8 +35,7 @@ public class ApacheCommonsConfigurationService {
         }
         Parameters params = new Parameters();
         PropertiesConfigurationLayout layout = new PropertiesConfigurationLayout();
-        // https://issues.apache.org/jira/browse/CONFIGURATION-644
-//        layout.setHeaderComment(HEADER_COMMENT);
+        layout.setHeaderComment(HEADER_COMMENT);
         layout.setGlobalSeparator("=");
         builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class).configure(
                 params.properties()

@@ -20,12 +20,16 @@
 package org.libresonic.player.ajax;
 
 import org.directwebremoting.WebContextFactory;
-import org.libresonic.player.Logger;
 import org.libresonic.player.domain.ArtistBio;
 import org.libresonic.player.domain.MediaFile;
 import org.libresonic.player.domain.MusicFolder;
 import org.libresonic.player.domain.UserSettings;
-import org.libresonic.player.service.*;
+import org.libresonic.player.service.LastFmService;
+import org.libresonic.player.service.MediaFileService;
+import org.libresonic.player.service.SecurityService;
+import org.libresonic.player.service.SettingsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -43,25 +47,12 @@ import java.util.List;
  */
 public class MultiService {
 
-    private static final Logger LOG = Logger.getLogger(MultiService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultiService.class);
 
-    private NetworkService networkService;
     private MediaFileService mediaFileService;
     private LastFmService lastFmService;
     private SecurityService securityService;
     private SettingsService settingsService;
-
-    /**
-     * Returns status for port forwarding and URL redirection.
-     */
-    public NetworkStatus getNetworkStatus() {
-        NetworkService.Status portForwardingStatus = networkService.getPortForwardingStatus();
-        NetworkService.Status urlRedirectionStatus = networkService.getURLRedirecionStatus();
-        return new NetworkStatus(portForwardingStatus.getText(),
-                                 portForwardingStatus.getDate(),
-                                 urlRedirectionStatus.getText(),
-                                 urlRedirectionStatus.getDate());
-    }
 
     public ArtistInfo getArtistInfo(int mediaFileId, int maxSimilarArtists, int maxTopSongs) {
         MediaFile mediaFile = mediaFileService.getMediaFile(mediaFileId);
@@ -109,10 +100,6 @@ public class MultiService {
         userSettings.setShowSideBar(show);
         userSettings.setChanged(new Date());
         settingsService.updateUserSettings(userSettings);
-    }
-
-    public void setNetworkService(NetworkService networkService) {
-        this.networkService = networkService;
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {

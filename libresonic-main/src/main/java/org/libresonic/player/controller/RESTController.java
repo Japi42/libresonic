@@ -20,8 +20,6 @@
 package org.libresonic.player.controller;
 
 import org.apache.commons.lang.StringUtils;
-import org.libresonic.player.Logger;
-import org.libresonic.player.ajax.ChatService;
 import org.libresonic.player.ajax.LyricsInfo;
 import org.libresonic.player.ajax.LyricsService;
 import org.libresonic.player.ajax.PlayQueueService;
@@ -46,6 +44,8 @@ import org.libresonic.player.util.Util;
 import org.libresonic.restapi.*;
 import org.libresonic.restapi.Genres;
 import org.libresonic.restapi.PodcastStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;
@@ -74,9 +74,10 @@ import static org.springframework.web.bind.ServletRequestUtils.*;
  * @author Sindre Mehus
  */
 @Controller
+@RequestMapping("/rest")
 public class RESTController {
 
-    private static final Logger LOG = Logger.getLogger(RESTController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RESTController.class);
 
     @Autowired
     private SettingsService settingsService;
@@ -112,8 +113,6 @@ public class RESTController {
     private ShareService shareService;
     @Autowired
     private PlaylistService playlistService;
-    @Autowired
-    private ChatService chatService;
     @Autowired
     private LyricsService lyricsService;
     @Autowired
@@ -154,7 +153,7 @@ public class RESTController {
         }
     }
 
-    @RequestMapping(value = "/rest/ping", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/ping", method = {RequestMethod.GET, RequestMethod.POST})
     public void ping(HttpServletRequest request, HttpServletResponse response) throws Exception {
         Response res = createResponse();
         jaxbWriter.writeResponse(request, response, res);
@@ -168,7 +167,7 @@ public class RESTController {
      * @param response
      * @throws Exception
      */
-    @RequestMapping(value = "/rest/getLicense", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getLicense", method = {RequestMethod.GET, RequestMethod.POST})
     public void getLicense(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         License license = new License();
@@ -186,7 +185,7 @@ public class RESTController {
     }
 
 
-    @RequestMapping(value = "/rest/getMusicFolders", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getMusicFolders", method = {RequestMethod.GET, RequestMethod.POST})
     public void getMusicFolders(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -203,7 +202,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getIndexes", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getIndexes", method = {RequestMethod.GET, RequestMethod.POST})
     public void getIndexes(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Response res = createResponse();
@@ -273,7 +272,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getGenres", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getGenres", method = {RequestMethod.GET, RequestMethod.POST})
     public void getGenres(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Genres genres = new Genres();
@@ -290,7 +289,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getSongsByGenre", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getSongsByGenre", method = {RequestMethod.GET, RequestMethod.POST})
     public void getSongsByGenre(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -313,7 +312,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getArtists", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getArtists", method = {RequestMethod.GET, RequestMethod.POST})
     public void getArtists(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -338,7 +337,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getSimilarSongs", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getSimilarSongs", method = {RequestMethod.GET, RequestMethod.POST})
     public void getSimilarSongs(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -365,7 +364,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getSimilarSongs2", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getSimilarSongs2", method = {RequestMethod.GET, RequestMethod.POST})
     public void getSimilarSongs2(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -393,7 +392,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getTopSongs", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getTopSongs", method = {RequestMethod.GET, RequestMethod.POST})
     public void getTopSongs(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -415,7 +414,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getArtistInfo", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getArtistInfo", method = {RequestMethod.GET, RequestMethod.POST})
     public void getArtistInfo(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -451,7 +450,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getArtistInfo2", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getArtistInfo2", method = {RequestMethod.GET, RequestMethod.POST})
     public void getArtistInfo2(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -508,7 +507,7 @@ public class RESTController {
         return result;
     }
 
-    @RequestMapping(value = "/rest/getArtist", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getArtist", method = {RequestMethod.GET, RequestMethod.POST})
     public void getArtist(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -571,7 +570,7 @@ public class RESTController {
         return jaxbPlaylist;
     }
 
-    @RequestMapping(value = "/rest/getAlbum", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getAlbum", method = {RequestMethod.GET, RequestMethod.POST})
     public void getAlbum(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -594,7 +593,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getSong", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getSong", method = {RequestMethod.GET, RequestMethod.POST})
     public void getSong(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -616,7 +615,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getMusicDirectory", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getMusicDirectory", method = {RequestMethod.GET, RequestMethod.POST})
     public void getMusicDirectory(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -660,7 +659,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/search", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/search", method = {RequestMethod.GET, RequestMethod.POST})
     public void search(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -704,7 +703,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/search2", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/search2", method = {RequestMethod.GET, RequestMethod.POST})
     public void search2(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -743,7 +742,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/search3", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/search3", method = {RequestMethod.GET, RequestMethod.POST})
     public void search3(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -782,7 +781,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getPlaylists", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getPlaylists", method = {RequestMethod.GET, RequestMethod.POST})
     public void getPlaylists(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -808,7 +807,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getPlaylist", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getPlaylist", method = {RequestMethod.GET, RequestMethod.POST})
     public void getPlaylist(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -837,7 +836,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/jukeboxControl", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/jukeboxControl", method = {RequestMethod.GET, RequestMethod.POST})
     public void jukeboxControl(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request, true);
 
@@ -916,7 +915,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/createPlaylist", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/createPlaylist", method = {RequestMethod.GET, RequestMethod.POST})
     public void createPlaylist(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request, true);
         String username = securityService.getCurrentUsername(request);
@@ -961,7 +960,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/updatePlaylist", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/updatePlaylist", method = {RequestMethod.GET, RequestMethod.POST})
     public void updatePlaylist(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request, true);
         String username = securityService.getCurrentUsername(request);
@@ -1029,7 +1028,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/deletePlaylist", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/deletePlaylist", method = {RequestMethod.GET, RequestMethod.POST})
     public void deletePlaylist(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request, true);
         String username = securityService.getCurrentUsername(request);
@@ -1049,7 +1048,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getAlbumList", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getAlbumList", method = {RequestMethod.GET, RequestMethod.POST})
     public void getAlbumList(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1100,7 +1099,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getAlbumList2", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getAlbumList2", method = {RequestMethod.GET, RequestMethod.POST})
     public void getAlbumList2(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -1144,7 +1143,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getRandomSongs", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getRandomSongs", method = {RequestMethod.GET, RequestMethod.POST})
     public void getRandomSongs(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1168,7 +1167,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getVideos", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getVideos", method = {RequestMethod.GET, RequestMethod.POST})
     public void getVideos(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1187,7 +1186,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getNowPlaying", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getNowPlaying", method = {RequestMethod.GET, RequestMethod.POST})
     public void getNowPlaying(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         NowPlaying result = new NowPlaying();
@@ -1340,7 +1339,7 @@ public class RESTController {
         return null;
     }
 
-    @RequestMapping(value = "/rest/download", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/download", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView download(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1364,7 +1363,7 @@ public class RESTController {
         return downloadController.handleRequest(request, response);
     }
 
-    @RequestMapping(value = "/rest/stream", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/stream", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView stream(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1377,7 +1376,7 @@ public class RESTController {
         return null;
     }
 
-    @RequestMapping(value = "/rest/hls", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/hls", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView hls(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1399,7 +1398,7 @@ public class RESTController {
         return null;
     }
 
-    @RequestMapping(value = "/rest/scrobble", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/scrobble", method = {RequestMethod.GET, RequestMethod.POST})
     public void scrobble(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -1432,12 +1431,12 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/star", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/star", method = {RequestMethod.GET, RequestMethod.POST})
     public void star(HttpServletRequest request, HttpServletResponse response) throws Exception {
         starOrUnstar(request, response, true);
     }
 
-    @RequestMapping(value = "/rest/unstar", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/unstar", method = {RequestMethod.GET, RequestMethod.POST})
     public void unstar(HttpServletRequest request, HttpServletResponse response) throws Exception {
         starOrUnstar(request, response, false);
     }
@@ -1486,7 +1485,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getStarred", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getStarred", method = {RequestMethod.GET, RequestMethod.POST})
     public void getStarred(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1509,7 +1508,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getStarred2", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getStarred2", method = {RequestMethod.GET, RequestMethod.POST})
     public void getStarred2(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1532,7 +1531,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getPodcasts", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getPodcasts", method = {RequestMethod.GET, RequestMethod.POST})
     public void getPodcasts(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1570,7 +1569,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getNewestPodcasts", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getNewestPodcasts", method = {RequestMethod.GET, RequestMethod.POST})
     public void getNewestPodcasts(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1607,7 +1606,7 @@ public class RESTController {
         return e;
     }
 
-    @RequestMapping(value = "/rest/refreshPodcasts", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/refreshPodcasts", method = {RequestMethod.GET, RequestMethod.POST})
     public void refreshPodcasts(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1619,7 +1618,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/createPodcastChannel", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/createPodcastChannel", method = {RequestMethod.GET, RequestMethod.POST})
     public void createPodcastChannel(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1633,7 +1632,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/deletePodcastChannel", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/deletePodcastChannel", method = {RequestMethod.GET, RequestMethod.POST})
     public void deletePodcastChannel(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1647,7 +1646,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/deletePodcastEpisode", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/deletePodcastEpisode", method = {RequestMethod.GET, RequestMethod.POST})
     public void deletePodcastEpisode(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1661,7 +1660,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/downloadPodcastEpisode", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/downloadPodcastEpisode", method = {RequestMethod.GET, RequestMethod.POST})
     public void downloadPodcastEpisode(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1681,7 +1680,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getInternetRadioStations", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getInternetRadioStations", method = {RequestMethod.GET, RequestMethod.POST})
     public void getInternetRadioStations(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -1699,7 +1698,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getBookmarks", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getBookmarks", method = {RequestMethod.GET, RequestMethod.POST})
     public void getBookmarks(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1724,7 +1723,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/createBookmark", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/createBookmark", method = {RequestMethod.GET, RequestMethod.POST})
     public void createBookmark(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -1739,7 +1738,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/deleteBookmark", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/deleteBookmark", method = {RequestMethod.GET, RequestMethod.POST})
     public void deleteBookmark(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -1751,7 +1750,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getPlayQueue", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getPlayQueue", method = {RequestMethod.GET, RequestMethod.POST})
     public void getPlayQueue(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -1782,7 +1781,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/savePlayQueue", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/savePlayQueue", method = {RequestMethod.GET, RequestMethod.POST})
     public void savePlayQueue(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
@@ -1802,7 +1801,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getShares", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getShares", method = {RequestMethod.GET, RequestMethod.POST})
     public void getShares(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1812,7 +1811,7 @@ public class RESTController {
 
         Shares result = new Shares();
         for (Share share : shareService.getSharesForUser(user)) {
-            org.libresonic.restapi.Share s = createJaxbShare(share);
+            org.libresonic.restapi.Share s = createJaxbShare(request, share);
             result.getShare().add(s);
 
             for (MediaFile mediaFile : shareService.getSharedFiles(share.getId(), musicFolders)) {
@@ -1824,7 +1823,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/createShare", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/createShare", method = {RequestMethod.GET, RequestMethod.POST})
     public void createShare(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Player player = playerService.getPlayer(request, response);
@@ -1833,11 +1832,6 @@ public class RESTController {
         User user = securityService.getCurrentUser(request);
         if (!user.isShareRole()) {
             error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to share media.");
-            return;
-        }
-
-        if (!settingsService.isUrlRedirectionEnabled()) {
-            error(request, response, ErrorCode.GENERIC, "Sharing is only supported for *.libresonic.org domain names.");
             return;
         }
 
@@ -1855,7 +1849,7 @@ public class RESTController {
         shareService.updateShare(share);
 
         Shares result = new Shares();
-        org.libresonic.restapi.Share s = createJaxbShare(share);
+        org.libresonic.restapi.Share s = createJaxbShare(request, share);
         result.getShare().add(s);
 
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);
@@ -1869,7 +1863,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/deleteShare", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/deleteShare", method = {RequestMethod.GET, RequestMethod.POST})
     public void deleteShare(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1889,7 +1883,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/updateShare", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/updateShare", method = {RequestMethod.GET, RequestMethod.POST})
     public void updateShare(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -1915,10 +1909,10 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    private org.libresonic.restapi.Share createJaxbShare(Share share) {
+    private org.libresonic.restapi.Share createJaxbShare(HttpServletRequest request, Share share) {
         org.libresonic.restapi.Share result = new org.libresonic.restapi.Share();
         result.setId(String.valueOf(share.getId()));
-        result.setUrl(shareService.getShareUrl(share));
+        result.setUrl(shareService.getShareUrl(request, share));
         result.setUsername(share.getUsername());
         result.setCreated(jaxbWriter.convertDate(share.getCreated()));
         result.setVisitCount(share.getVisitCount());
@@ -1962,19 +1956,19 @@ public class RESTController {
         return result;
     }
 
-    @RequestMapping(value = "/rest/getCoverArt", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getCoverArt", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView getCoverArt(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         return coverArtController.handleRequest(request, response);
     }
 
-    @RequestMapping(value = "/rest/getAvatar", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getAvatar", method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView getAvatar(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         return avatarController.handleRequest(request, response);
     }
 
-    @RequestMapping(value = "/rest/changePassword", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/changePassword", method = {RequestMethod.GET, RequestMethod.POST})
     public void changePassword(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -1998,7 +1992,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getUser", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getUser", method = {RequestMethod.GET, RequestMethod.POST})
     public void getUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -2021,7 +2015,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/getUsers", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getUsers", method = {RequestMethod.GET, RequestMethod.POST})
     public void getUsers(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
 
@@ -2072,7 +2066,7 @@ public class RESTController {
         return result;
     }
 
-    @RequestMapping(value = "/rest/createUser", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/createUser", method = {RequestMethod.GET, RequestMethod.POST})
     public void createUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -2108,7 +2102,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/updateUser", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/updateUser", method = {RequestMethod.GET, RequestMethod.POST})
     public void updateUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -2166,7 +2160,7 @@ public class RESTController {
         return request.getParameter(name) != null;
     }
 
-    @RequestMapping(value = "/rest/deleteUser", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/deleteUser", method = {RequestMethod.GET, RequestMethod.POST})
     public void deleteUser(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         User user = securityService.getCurrentUser(request);
@@ -2186,35 +2180,7 @@ public class RESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping(value = "/rest/getChatMessages", method = {RequestMethod.GET, RequestMethod.POST})
-    public void getChatMessages(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        long since = getLongParameter(request, "since", 0L);
-
-        ChatMessages result = new ChatMessages();
-        for (ChatService.Message message : chatService.getMessages(0L).getMessages()) {
-            long time = message.getDate().getTime();
-            if (time > since) {
-                ChatMessage c = new ChatMessage();
-                result.getChatMessage().add(c);
-                c.setUsername(message.getUsername());
-                c.setTime(time);
-                c.setMessage(message.getContent());
-            }
-        }
-        Response res = createResponse();
-        res.setChatMessages(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping(value = "/rest/addChatMessage", method = {RequestMethod.GET, RequestMethod.POST})
-    public void addChatMessage(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        chatService.doAddMessage(getRequiredStringParameter(request, "message"), request);
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping(value = "/rest/getLyrics", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/getLyrics", method = {RequestMethod.GET, RequestMethod.POST})
     public void getLyrics(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String artist = request.getParameter("artist");
@@ -2231,7 +2197,7 @@ public class RESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
-    @RequestMapping(value = "/rest/setRating", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/setRating", method = {RequestMethod.GET, RequestMethod.POST})
     public void setRating(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         Integer rating = getRequiredIntParameter(request, "rating");

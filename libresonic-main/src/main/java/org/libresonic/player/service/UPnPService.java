@@ -32,15 +32,16 @@ import org.fourthline.cling.support.connectionmanager.ConnectionManagerService;
 import org.fourthline.cling.support.model.ProtocolInfos;
 import org.fourthline.cling.support.model.dlna.DLNAProfiles;
 import org.fourthline.cling.support.model.dlna.DLNAProtocolInfo;
-import org.libresonic.player.Logger;
-import org.libresonic.player.domain.Version;
 import org.libresonic.player.service.upnp.ApacheUpnpServiceConfiguration;
 import org.libresonic.player.service.upnp.FolderBasedContentDirectory;
 import org.libresonic.player.service.upnp.MSMediaReceiverRegistrarService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Sindre Mehus
@@ -48,30 +49,66 @@ import java.util.List;
  */
 public class UPnPService {
 
-    private static final Logger LOG = Logger.getLogger(UPnPService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UPnPService.class);
 
     private SettingsService settingsService;
-    private VersionService versionService;
     private UpnpService upnpService;
     private FolderBasedContentDirectory folderBasedContentDirectory;
+    private AtomicReference<Boolean> running = new AtomicReference<>(false);
 
     public void init() {
-        startService();
+        if(settingsService.isDlnaEnabled() || settingsService.isSonosEnabled()) {
+            ensureServiceStarted();
+            if(settingsService.isDlnaEnabled()) {
+                // Start DLNA media server?
+                setMediaServerEnabled(true);
+            }
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                ensureServiceStopped();
+            }
+        });
     }
 
-    public void startService() {
-        Runnable runnable = new Runnable() {
-            public void run() {
-                try {
-                    LOG.info("Starting UPnP service...");
-                    createService();
-                    LOG.info("Starting UPnP service - Done!");
-                } catch (Throwable x) {
-                    LOG.error("Failed to start UPnP service: " + x, x);
-                }
+    public void ensureServiceStarted() {
+        running.getAndUpdate(bo -> {
+            if(!bo) {
+                startService();
+                return true;
+            } else {
+                return true;
             }
-        };
-        new Thread(runnable).start();
+        });
+    }
+
+    public void ensureServiceStopped() {
+        running.getAndUpdate(bo -> {
+            if (bo) {
+                if (upnpService != null) {
+                    LOG.info("Disabling UPnP/DLNA media server");
+                    upnpService.getRegistry().removeAllLocalDevices();
+                    System.err.println("Shutting down UPnP service...");
+                    upnpService.shutdown();
+                    System.err.println("Shutting down UPnP service - Done!");
+                }
+                return false;
+            } else {
+                return false;
+            }
+        });
+
+    }
+
+    private void startService() {
+        try {
+            LOG.info("Starting UPnP service...");
+            createService();
+            LOG.info("Starting UPnP service - Done!");
+        } catch (Throwable x) {
+            LOG.error("Failed to start UPnP service: " + x, x);
+        }
     }
 
     private synchronized void createService() throws Exception {
@@ -80,21 +117,11 @@ public class UPnPService {
         // Asynch search for other devices (most importantly UPnP-enabled routers for port-mapping)
         upnpService.getControlPoint().search();
 
-        // Start DLNA media server?
-        setMediaServerEnabled(settingsService.isDlnaEnabled());
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                System.err.println("Shutting down UPnP service...");
-                upnpService.shutdown();
-                System.err.println("Shutting down UPnP service - Done!");
-            }
-        });
     }
 
     public void setMediaServerEnabled(boolean enabled) {
         if (enabled) {
+            ensureServiceStarted();
             try {
                 upnpService.getRegistry().addDevice(createMediaServerDevice());
                 LOG.info("Enabling UPnP/DLNA media server");
@@ -102,8 +129,7 @@ public class UPnPService {
                 LOG.error("Failed to start UPnP/DLNA media server: " + x, x);
             }
         } else {
-            upnpService.getRegistry().removeAllLocalDevices();
-            LOG.info("Disabling UPnP/DLNA media server");
+            ensureServiceStopped();
         }
     }
 
@@ -114,14 +140,12 @@ public class UPnPService {
         DeviceType type = new UDADeviceType("MediaServer", 1);
 
         // TODO: DLNACaps
-        Version version = versionService.getLocalVersion();
-        String versionString = version == null ? null : version.toString();
 
         DeviceDetails details = new DeviceDetails(serverName, new ManufacturerDetails(serverName),
                 new ModelDetails(serverName),
                 new DLNADoc[]{new DLNADoc("DMS", DLNADoc.Version.V1_5)}, null);
 
-        Icon icon = new Icon("image/png", 512, 512, 32, getClass().getResource("logo-512.png"));
+        Icon icon = new Icon("image/png", 512, 512, 32, "logo-512", getClass().getResourceAsStream("logo-512.png"));
 
         LocalService<FolderBasedContentDirectory> contentDirectoryservice = new AnnotationLocalServiceBinder().read(FolderBasedContentDirectory.class);
         contentDirectoryservice.setManager(new DefaultServiceManager<FolderBasedContentDirectory>(contentDirectoryservice) {
@@ -154,12 +178,13 @@ public class UPnPService {
 
         // For compatibility with Microsoft
         LocalService<MSMediaReceiverRegistrarService> receiverService = new AnnotationLocalServiceBinder().read(MSMediaReceiverRegistrarService.class);
-        receiverService.setManager(new DefaultServiceManager<MSMediaReceiverRegistrarService>(receiverService, MSMediaReceiverRegistrarService.class));
+        receiverService.setManager(new DefaultServiceManager<>(receiverService, MSMediaReceiverRegistrarService.class));
 
         return new LocalDevice(identity, type, details, new Icon[]{icon}, new LocalService[]{contentDirectoryservice, connetionManagerService, receiverService});
     }
 
     public List<String> getSonosControllerHosts() {
+        ensureServiceStarted();
         List<String> result = new ArrayList<String>();
         for (Device device : upnpService.getRegistry().getDevices(new DeviceType("schemas-upnp-org", "ZonePlayer"))) {
             if (device instanceof RemoteDevice) {
@@ -178,10 +203,6 @@ public class UPnPService {
 
     public void setSettingsService(SettingsService settingsService) {
         this.settingsService = settingsService;
-    }
-
-    public void setVersionService(VersionService versionService) {
-        this.versionService = versionService;
     }
 
     public void setFolderBasedContentDirectory(FolderBasedContentDirectory folderBasedContentDirectory) {

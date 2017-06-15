@@ -22,8 +22,9 @@ package org.libresonic.player.controller;
 import org.libresonic.player.domain.MediaFile;
 import org.libresonic.player.domain.PlayQueue;
 import org.libresonic.player.domain.Player;
+import org.libresonic.player.service.JWTSecurityService;
+import org.libresonic.player.service.NetworkService;
 import org.libresonic.player.service.PlayerService;
-import org.libresonic.player.service.SettingsService;
 import org.libresonic.player.service.TranscodingService;
 import org.libresonic.player.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +52,9 @@ public class M3UController  {
     @Autowired
     private PlayerService playerService;
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private TranscodingService transcodingService;
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
 
     @RequestMapping(method = RequestMethod.GET)
     public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -62,16 +63,8 @@ public class M3UController  {
 
         Player player = playerService.getPlayer(request, response);
 
-        String url = request.getRequestURL().toString();
-        url = url.replaceFirst("play.m3u.*", "stream?");
-
-        // Rewrite URLs in case we're behind a proxy.
-        if (settingsService.isRewriteUrlEnabled()) {
-            String referer = request.getHeader("referer");
-            url = StringUtil.rewriteUrl(url, referer);
-        }
-
-        url = settingsService.rewriteRemoteUrl(url);
+        String url = NetworkService.getBaseUrl(request);
+        url = url + "ext/stream?";
 
         if (player.isExternalWithPlaylist()) {
             createClientSidePlaylist(response.getWriter(), player, url);
@@ -96,7 +89,11 @@ public class M3UController  {
                 duration = -1;
             }
             out.println("#EXTINF:" + duration + "," + mediaFile.getArtist() + " - " + mediaFile.getTitle());
-            out.println(url + "player=" + player.getId() + "&id=" + mediaFile.getId() + "&suffix=." + transcodingService.getSuffix(player, mediaFile, null));
+
+            String urlNoAuth = url +  "player=" + player.getId() + "&id=" + mediaFile.getId() + "&suffix=." +
+                    transcodingService.getSuffix(player, mediaFile, null);
+            String urlWithAuth = jwtSecurityService.addJWTToken(urlNoAuth);
+            out.println(urlWithAuth);
         }
     }
 
@@ -115,7 +112,7 @@ public class M3UController  {
         }
         out.println("#EXTM3U");
         out.println("#EXTINF:-1,Libresonic");
-        out.println(url);
+        out.println(jwtSecurityService.addJWTToken(url));
     }
 
     private String getSuffix(Player player) {

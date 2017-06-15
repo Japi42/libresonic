@@ -20,7 +20,8 @@
 package org.libresonic.player.io;
 
 import org.apache.commons.io.IOUtils;
-import org.libresonic.player.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +37,7 @@ import java.io.OutputStream;
  */
 public class TranscodeInputStream extends InputStream {
 
-    private static final Logger LOG = Logger.getLogger(TranscodeInputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TranscodeInputStream.class);
 
     private InputStream processInputStream;
     private OutputStream processOutputStream;
@@ -59,7 +60,7 @@ public class TranscodeInputStream extends InputStream {
         for (String s : processBuilder.command()) {
             buf.append('[').append(s).append("] ");
         }
-        LOG.info(buf);
+        LOG.info(buf.toString());
 
         process = processBuilder.start();
         processOutputStream = process.getOutputStream();

@@ -20,7 +20,7 @@
 package org.libresonic.player.service.upnp;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.fourthline.cling.support.contentdirectory.AbstractContentDirectoryService;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
 import org.fourthline.cling.support.contentdirectory.DIDLParser;
@@ -30,11 +30,13 @@ import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.libresonic.player.domain.MediaFile;
 import org.libresonic.player.domain.Player;
+import org.libresonic.player.service.JWTSecurityService;
 import org.libresonic.player.service.PlayerService;
 import org.libresonic.player.service.SettingsService;
 import org.libresonic.player.service.TranscodingService;
 import org.libresonic.player.util.StringUtil;
 import org.seamless.util.MimeType;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author Sindre Mehus
@@ -47,13 +49,22 @@ public abstract class LibresonicContentDirectory extends AbstractContentDirector
     protected SettingsService settingsService;
     private PlayerService playerService;
     private TranscodingService transcodingService;
+    protected JWTSecurityService jwtSecurityService;
 
     protected Res createResourceForSong(MediaFile song) {
         Player player = playerService.getGuestPlayer(null);
-        String url = getBaseUrl() + "stream?id=" + song.getId() + "&player=" + player.getId();
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl() + "/ext/stream")
+                .queryParam("id", song.getId())
+                .queryParam("player", player.getId());
+
         if (song.isVideo()) {
-            url += "&format=" + TranscodingService.FORMAT_RAW;
+            builder.queryParam("format", TranscodingService.FORMAT_RAW);
         }
+
+        jwtSecurityService.addJWTToken(builder);
+
+        String url = builder.toUriString();
 
         String suffix = song.isVideo() ? FilenameUtils.getExtension(song.getPath()) : transcodingService.getSuffix(player, song, null);
         String mimeTypeString = StringUtil.getMimeType(suffix);
@@ -92,20 +103,11 @@ public abstract class LibresonicContentDirectory extends AbstractContentDirector
     }
 
     protected String getBaseUrl() {
-        int port = settingsService.getPort();
-        String contextPath = settingsService.getUrlRedirectContextPath();
-
-        // Note: Serving media and cover art with http (as opposed to https) works when using jetty and LibresonicDeployer.
-        StringBuilder url = new StringBuilder("http://")
-                .append(settingsService.getLocalIpAddress())
-                .append(":")
-                .append(port)
-                .append("/");
-
-        if (StringUtils.isNotEmpty(contextPath)) {
-            url.append(contextPath).append("/");
+        String dlnaBaseLANURL = settingsService.getDlnaBaseLANURL();
+        if(StringUtils.isBlank(dlnaBaseLANURL)) {
+            throw new RuntimeException("DLNA Base LAN URL is not set correctly");
         }
-        return url.toString();
+        return dlnaBaseLANURL;
     }
 
     protected BrowseResult createBrowseResult(DIDLContent didl, int count, int totalMatches) throws Exception {
@@ -131,5 +133,9 @@ public abstract class LibresonicContentDirectory extends AbstractContentDirector
 
     public void setSettingsService(SettingsService settingsService) {
         this.settingsService = settingsService;
+    }
+
+    public void setJwtSecurityService(JWTSecurityService jwtSecurityService) {
+        this.jwtSecurityService = jwtSecurityService;
     }
 }

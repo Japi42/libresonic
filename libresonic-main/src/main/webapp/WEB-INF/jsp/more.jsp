@@ -62,6 +62,7 @@
             } catch(e) { return; }
             elements = form.getElementsByTagName("input");
             for (var i = 0; i < elements.length; i++) {
+                if (elements[i].type == "hidden") continue;
                 if (elements[i].type == "submit") continue;
                 if (data[elements[i].name]) elements[i].value = data[elements[i].name];
             }
@@ -87,9 +88,17 @@
             var data = {}
             var elements = [];
             elements = form.getElementsByTagName("input");
-            for (var i = 0; i < elements.length; i++) data[elements[i].name] = elements[i].value;
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].type == "hidden") continue;
+                if (elements[i].type == "submit") continue;
+                data[elements[i].name] = elements[i].value;
+            }
             elements = form.getElementsByTagName("select");
-            for (var i = 0; i < elements.length; i++) data[elements[i].name] = elements[i].value;
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].type == "hidden") continue;
+                if (elements[i].type == "submit") continue;
+                data[elements[i].name] = elements[i].value;
+            }
             localStorage.setItem("randomPlayQueue", JSON.stringify(data));
         }
 
@@ -262,16 +271,6 @@
 <fmt:message key="more.apps.text"/>
 
 
-<a href="<c:url value="${model.jamstashUrl}"/>" target="_blank">
-    <img alt="Jamstash" src="<c:url value="/icons/default_light/jamstash.png"/>" style="float: right;margin-left: 3em; margin-right: 3em"/>
-</a>
-
-<h2>
-    <img src="<spring:theme code="html5Image"/>" alt=""/>
-    <span style="vertical-align: middle"><fmt:message key="more.jamstash.title"/></span>
-</h2>
-<fmt:message key="more.jamstash.text"><fmt:param>${model.jamstashUrl}</fmt:param></fmt:message>
-
 <h2>
     <img src="<spring:theme code="statusSmallImage"/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="more.status.title"/></span>
@@ -291,8 +290,7 @@
         <span style="vertical-align: middle"><fmt:message key="more.upload.title"/></span>
     </h2>
 
-    <form method="post" enctype="multipart/form-data" action="upload.view">
-        <sec:csrfInput />
+    <form method="post" enctype="multipart/form-data" action="upload.view?${_csrf.parameterName}=${_csrf.token}">
         <table>
             <tr>
                 <td><fmt:message key="more.upload.source"/></td>

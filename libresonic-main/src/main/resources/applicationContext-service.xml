@@ -92,12 +92,15 @@
 
     <bean id="configurationService" class="org.libresonic.player.service.ApacheCommonsConfigurationService" />
 
+    <bean id="metricsManager" class="org.libresonic.player.monitor.MetricsManager">
+        <property name="configurationService" ref="configurationService" />
+    </bean>
+
     <bean id="settingsService" class="org.libresonic.player.service.SettingsService" init-method="init">
         <property name="internetRadioDao" ref="internetRadioDao"/>
         <property name="musicFolderDao" ref="musicFolderDao"/>
         <property name="userDao" ref="userDao"/>
         <property name="avatarDao" ref="avatarDao"/>
-        <property name="versionService" ref="versionService"/>
         <property name="configurationService" ref="configurationService" />
     </bean>
 
@@ -117,10 +120,7 @@
         <property name="albumDao" ref="albumDao"/>
     </bean>
 
-    <bean id="networkService" class="org.libresonic.player.service.NetworkService" init-method="init">
-        <property name="settingsService" ref="settingsService"/>
-        <property name="upnpService" ref="upnpService"/>
-    </bean>
+    <bean id="networkService" class="org.libresonic.player.service.NetworkService" />
 
     <bean id="playerService" class="org.libresonic.player.service.PlayerService" init-method="init">
         <property name="playerDao" ref="playerDao"/>
@@ -129,15 +129,12 @@
         <property name="transcodingService" ref="transcodingService"/>
     </bean>
 
-    <bean id="playlistService" class="org.libresonic.player.service.PlaylistService">
-        <property name="mediaFileService" ref="mediaFileService"/>
-        <property name="securityService" ref="securityService"/>
-        <property name="settingsService" ref="settingsService"/>
-        <property name="mediaFileDao" ref="mediaFileDao"/>
-        <property name="playlistDao" ref="playlistDao"/>
-    </bean>
+    <context:component-scan base-package="org.libresonic.player.service.playlist" />
 
-    <bean id="versionService" class="org.libresonic.player.service.VersionService" init-method="init"/>
+    <!--suppress SpringBeanConstructorArgInspection, AutowiredDependenciesInspection -->
+    <bean id="playlistService" class="org.libresonic.player.service.PlaylistService" autowire="constructor"/>
+
+    <bean id="versionService" class="org.libresonic.player.service.VersionService" />
 
     <bean id="statusService" class="org.libresonic.player.service.StatusService">
         <property name="mediaFileService" ref="mediaFileService"/>
@@ -166,9 +163,9 @@
 
     <bean id="shareService" class="org.libresonic.player.service.ShareService">
         <property name="shareDao" ref="shareDao"/>
-        <property name="settingsService" ref="settingsService"/>
         <property name="securityService" ref="securityService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="jwtSecurityService" ref="jwtSecurityService" />
     </bean>
 
     <bean id="podcastService" class="org.libresonic.player.service.PodcastService" init-method="init">
@@ -177,10 +174,6 @@
         <property name="securityService" ref="securityService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
         <property name="metaDataParserFactory" ref="metaDataParserFactory"/>
-    </bean>
-
-    <bean id="adService" class="org.libresonic.player.service.AdService">
-        <property name="adInterval" value="8"/>
     </bean>
 
     <bean id="jukeboxService" class="org.libresonic.player.service.JukeboxService">
@@ -198,11 +191,11 @@
         <property name="playerService" ref="playerService"/>
         <property name="transcodingService" ref="transcodingService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="jwtSecurityService" ref="jwtSecurityService" />
     </bean>
 
     <bean id="upnpService" class="org.libresonic.player.service.UPnPService" init-method="init">
         <property name="settingsService" ref="settingsService"/>
-        <property name="versionService" ref="versionService"/>
         <property name="folderBasedContentDirectory" ref="folderBasedContentDirectory"/>
     </bean>
 
@@ -212,7 +205,7 @@
         <property name="artistDao" ref="artistDao"/>
     </bean>
 
-    <bean id="sonosService" class="org.libresonic.player.service.SonosService" init-method="init">
+    <bean id="sonosService" class="org.libresonic.player.service.SonosService">
         <property name="sonosHelper" ref="sonosHelper"/>
         <property name="mediaFileService" ref="mediaFileService"/>
         <property name="securityService" ref="securityService"/>
@@ -236,7 +229,6 @@
     <!-- AJAX services -->
 
     <bean id="ajaxMultiService" class="org.libresonic.player.ajax.MultiService">
-        <property name="networkService" ref="networkService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
         <property name="settingsService" ref="settingsService"/>
         <property name="securityService" ref="securityService"/>
@@ -264,6 +256,7 @@
         <property name="ratingService" ref="ratingService"/>
         <property name="securityService" ref="securityService"/>
         <property name="podcastService" ref="podcastService"/>
+        <property name="jwtSecurityService" ref="jwtSecurityService" />
     </bean>
 
     <bean id="ajaxPlaylistService" class="org.libresonic.player.ajax.PlaylistService">
@@ -296,13 +289,13 @@
 
     <bean id="ajaxTransferService" class="org.libresonic.player.ajax.TransferService"/>
 
-    <bean id="ajaxChatService" class="org.libresonic.player.ajax.ChatService" init-method="init">
-        <property name="securityService" ref="securityService"/>
-    </bean>
-
     <bean id="localeResolver" class="org.libresonic.player.i18n.LibresonicLocaleResolver">
         <property name="securityService" ref="securityService"/>
         <property name="settingsService" ref="settingsService"/>
+    </bean>
+
+    <bean id="jwtSecurityService" class="org.libresonic.player.service.JWTSecurityService">
+        <constructor-arg ref="settingsService" />
     </bean>
 
 </beans>

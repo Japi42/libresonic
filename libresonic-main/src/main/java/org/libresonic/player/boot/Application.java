@@ -1,38 +1,40 @@
 package org.libresonic.player.boot;
 
 import net.sf.ehcache.constructs.web.ShutdownListener;
-import org.apache.catalina.Container;
-import org.apache.catalina.Wrapper;
-import org.apache.catalina.webresources.StandardRoot;
 import org.directwebremoting.servlet.DwrServlet;
 import org.libresonic.player.filter.*;
 import org.libresonic.player.spring.LibresonicPropertySourceConfigurer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatContextCustomizer;
-import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.boot.web.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.util.ReflectionUtils;
 
 import javax.servlet.Filter;
 import javax.servlet.ServletContextListener;
+
+import java.lang.reflect.Method;
 
 @SpringBootApplication(exclude = {
         JmxAutoConfiguration.class,
         JdbcTemplateAutoConfiguration.class,
         DataSourceAutoConfiguration.class,
         DataSourceTransactionManagerAutoConfiguration.class,
+        MultipartAutoConfiguration.class, // TODO: update to use spring boot builtin multipart support
         LiquibaseAutoConfiguration.class})
 @Configuration
 @ImportResource(value = {"classpath:/applicationContext-service.xml",
@@ -40,6 +42,8 @@ import javax.servlet.ServletContextListener;
         "classpath:/applicationContext-sonos.xml",
         "classpath:/libresonic-servlet.xml"})
 public class Application extends SpringBootServletInitializer implements EmbeddedServletContainerCustomizer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     /**
      * Registers the DWR servlet.
@@ -128,7 +132,7 @@ public class Application extends SpringBootServletInitializer implements Embedde
     public FilterRegistrationBean cacheFilterRegistration() {
         FilterRegistrationBean registration = new FilterRegistrationBean();
         registration.setFilter(cacheFilter());
-        registration.addUrlPatterns("/icons/*", "/style/*");
+        registration.addUrlPatterns("/icons/*", "/style/*", "/script/*", "/dwr/*", "/icons/*", "/coverArt.view", "/avatar.view");
         registration.addInitParameter("Cache-Control", "max-age=36000");
         registration.setName("CacheFilter");
         registration.setOrder(5);
@@ -154,6 +158,20 @@ public class Application extends SpringBootServletInitializer implements Embedde
     }
 
     @Bean
+    public Filter metricsFilter() {
+        return new MetricsFilter();
+    }
+
+    @Bean
+    public FilterRegistrationBean metricsFilterRegistration() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(metricsFilter());
+        registration.setOrder(7);
+        return registration;
+    }
+
+
+    @Bean
     public Filter noCacheFilter() {
         return new ResponseHeaderFilter();
     }
@@ -172,29 +190,28 @@ public class Application extends SpringBootServletInitializer implements Embedde
 
     @Override
     public void customize(ConfigurableEmbeddedServletContainer container) {
-        if (container instanceof TomcatEmbeddedServletContainerFactory) {
-            TomcatEmbeddedServletContainerFactory tomcatFactory = (TomcatEmbeddedServletContainerFactory) container;
-            tomcatFactory.addContextCustomizers((TomcatContextCustomizer) context -> {
-
-                // Increase the size and time before eviction of the Tomcat
-                // cache so that resources aren't uncompressed too often.
-                // See https://github.com/jhipster/generator-jhipster/issues/3995
-                StandardRoot resources = new StandardRoot();
-                resources.setCacheMaxSize(100000);
-                resources.setCacheObjectMaxSize(4000);
-                resources.setCacheTtl(24 * 3600 * 1000);  // 1 day, in milliseconds
-                context.setResources(resources);
-
-                // Put Jasper in production mode so that JSP aren't recompiled
-                // on each request.
-                // See http://stackoverflow.com/questions/29653326/spring-boot-application-slow-because-of-jsp-compilation
-                Container jsp = context.findChild("jsp");
-                if (jsp instanceof Wrapper) {
-                    ((Wrapper)jsp).addInitParameter("development", "false");
-                }
-            });
+        // Yes, there is a good reason we do this.
+        // We cannot count on the tomcat classes being on the classpath which will
+        // happen if the war is deployed to another app server like Jetty. So, we
+        // ensure this class does not have any direct dependencies on any Tomcat
+        // specific classes.
+        try {
+            Class<?> tomcatESCF = Class.forName("org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory");
+            if(tomcatESCF.isInstance(container)) {
+                LOG.debug("Attempting to optimize tomcat");
+                Object tomcatESCFInstance = tomcatESCF.cast(container);
+                Class<?> tomcatApplicationClass = Class.forName("org.libresonic.player.boot.TomcatApplication");
+                Method configure = ReflectionUtils.findMethod(tomcatApplicationClass, "configure", tomcatESCF);
+                configure.invoke(null, tomcatESCFInstance);
+                LOG.debug("Tomcat optimizations complete");
+            } else {
+                LOG.debug("Skipping tomcat optimization as we are not running on tomcat");
+            }
+        } catch (NoClassDefFoundError | ClassNotFoundException e) {
+            LOG.debug("Skipping tomcat optimization as the tomcat classes are not available");
+        } catch (Exception e) {
+            LOG.warn("An error happened while trying to optimize tomcat", e);
         }
-
     }
 
     public static void main(String[] args) {

@@ -57,6 +57,7 @@ public class PlayQueueService {
     private org.libresonic.player.service.PlaylistService playlistService;
     private MediaFileDao mediaFileDao;
     private PlayQueueDao playQueueDao;
+    private JWTSecurityService jwtSecurityService;
 
     /**
      * Returns the play queue for the player of the current user.
@@ -620,7 +621,7 @@ public class PlayQueueService {
     }
 
     private PlayQueueInfo convert(HttpServletRequest request, Player player, boolean serverSidePlaylist, int offset) throws Exception {
-        String url = request.getRequestURL().toString();
+        String url = NetworkService.getBaseUrl(request);
 
         if (serverSidePlaylist && player.isJukebox()) {
             jukeboxService.updateJukebox(player, offset);
@@ -636,19 +637,12 @@ public class PlayQueueService {
 
         for (MediaFile file : playQueue.getFiles()) {
 
-            String albumUrl = url.replaceFirst("/dwr/.*", "/main.view?id=" + file.getId());
-            String streamUrl = url.replaceFirst("/dwr/.*", "/stream?player=" + player.getId() + "&id=" + file.getId());
-            String coverArtUrl = url.replaceFirst("/dwr/.*", "/coverArt.view?id=" + file.getId());
+            String albumUrl = url + "/main.view?id=" + file.getId();
+            String streamUrl = url + "/stream?player=" + player.getId() + "&id=" + file.getId();
+            String coverArtUrl = url + "/coverArt.view?id=" + file.getId();
 
-            // Rewrite URLs in case we're behind a proxy.
-            if (settingsService.isRewriteUrlEnabled()) {
-                String referer = request.getHeader("referer");
-                albumUrl = StringUtil.rewriteUrl(albumUrl, referer);
-                streamUrl = StringUtil.rewriteUrl(streamUrl, referer);
-            }
-
-            String remoteStreamUrl = settingsService.rewriteRemoteUrl(streamUrl);
-            String remoteCoverArtUrl = settingsService.rewriteRemoteUrl(coverArtUrl);
+            String remoteStreamUrl = jwtSecurityService.addJWTToken(url + "/ext/stream?player=" + player.getId() + "&id=" + file.getId());
+            String remoteCoverArtUrl = jwtSecurityService.addJWTToken(url + "/ext/coverArt.view?id=" + file.getId());
 
             String format = formatFormat(player, file);
             String username = securityService.getCurrentUsername(request);
@@ -743,5 +737,9 @@ public class PlayQueueService {
 
     public void setPlaylistService(PlaylistService playlistService) {
         this.playlistService = playlistService;
+    }
+
+    public void setJwtSecurityService(JWTSecurityService jwtSecurityService) {
+        this.jwtSecurityService = jwtSecurityService;
     }
 }
